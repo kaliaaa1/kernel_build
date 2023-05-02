@@ -18,7 +18,10 @@ jobs:
           echo "KERNEL_SOURCE_BRANCH=$(cat config.env | grep -w "KERNEL_SOURCE_BRANCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
           echo "KERNEL_TARGET=$(cat config.env | grep -w "KERNEL_TARGET" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
           echo "BUILD_ARGS=$(cat config.env | grep -w "BUILD_ARGS" | head -n 1 | cut -d ":" -f 2)" >> $GITHUB_ENV
-
+          sudo apt-get update
+          sudo apt-get install device-tree-compiler bc cpio lib32ncurses5-dev lib32z1 build-essential binutils bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev git
+          which dtc
+          apt-cache search aarch64
       - name: Pull toolchain
         run: |
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 aarch64-linux-android-4.9
@@ -40,8 +43,16 @@ jobs:
                                   ${{ env.BUILD_ARGS }} \
                                   CLANG_TRIPLE=aarch64-linux-gnu- \
                                   CROSS_COMPILE=$GITHUB_WORKSPACE/aarch64-linux-android-4.9/bin/aarch64-linux-android- \
-                                  CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/arm-linux-androideabi-4.9/bin/arm-linux-androideabi- "
+                                  CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/arm-linux-androideabi-4.9/bin/arm-linux-androideabi- 
+                                  dtc=/usr/bin/dtc"
           cd kernel-source
+          chmod -R 777 ./prebuilt/dtc
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
+          echo "CONFIG_MODULES=y" >> ./arch/arm64/configs/sm8150-perf_defconfig
+          echo "CONFIG_KPROBES=y" >> ./arch/arm64/configs/sm8150-perf_defconfig
+          echo "CONFIG_HAVE_KPROBES=y" >> ./arch/arm64/configs/sm8150-perf_defconfig
+          echo "CONFIG_KPROBE_EVENTS=y" >> ./arch/arm64/configs/sm8150-perf_defconfig
+          echo "CONFIG_OVERLAY_FS=y" >> ./arch/arm64/configs/sm8150-perf_defconfig
           make ${args} ${{ env.KERNEL_TARGET }}_defconfig
           make -j64 ${args}
 
